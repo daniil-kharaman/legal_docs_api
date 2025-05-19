@@ -1,1 +1,13 @@
 fastapi[all]
+SQLAlchemy~=2.0.40
+Jinja2~=3.1.6
+docxtpl~=0.19.1
+python-dotenv~=1.1.0
+phonenumbers~=9.0.5
+pydantic~=2.11.3
+python-docx~=1.1.2
+PyJWT~=2.10.1
+passlib~=1.7.4
+psycopg2-binary
+python_docx_replace
+bcrypt~=3.2.2
