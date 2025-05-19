@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import exc
 from storage import db_models, database
 import os
-from typing import Annotated
+from typing import Annotated, List
 from storage.data_manager import ClientManager, AddressManager, TemplateManager, UserManager
 from datetime import timedelta
 from storage.database import get_db
@@ -13,6 +13,7 @@ from authentication.authentication import ACCESS_TOKEN_EXPIRE_MINUTES
 from authentication import user_login
 from validation import validation, schemas
 from validation.validation import db_connection_handler
+
 
 try:
     db_models.Base.metadata.create_all(bind=database.engine)
@@ -22,10 +23,57 @@ except Exception as e:
     print(f"Error: {e}")
 
 
-app = FastAPI()
+app = FastAPI(
+    title='LegalDocs API',
+    description="""
+    API for generating legal documents and client management.
+    
+    This API allows legal professionals to:
+    * Manage user accounts
+    * Create and manage clients
+    * Store client addresses
+    * Upload document templates
+    * Generate legal documents from templates
+    
+    ## Authentication
+    
+    The API uses OAuth2 with JWT tokens. To authenticate:
+    1. Create a user account via `/user/create`
+    2. Obtain a token via `/token`
+    3. Include the token in the Authorization header for protected endpoints
+    """,
+    version="1.0.0",
+    openapi_tags=[
+        {
+            "name": "Authentication",
+            "description": "User authentication endpoints for obtaining and using access tokens."
+        },
+        {
+            "name": "User",
+            "description": "Operations related to user management, including creation, updates, and deletion."
+        },
+        {
+            "name": "Client",
+            "description": "Client management endpoints for creating, retrieving, updating, and deleting client records."
+        },
+        {
+            "name": "Address",
+            "description": "Operations for managing client addresses including creation, retrieval, and updates."
+        },
+        {
+            "name": "Template",
+            "description": "Document template operations including upload, management, and document generation."
+        }
+    ]
+)
 
 
-@app.post('/user/create', response_model=schemas.UserResponse)
+@app.post(
+    '/user/create',
+    response_model=schemas.UserResponse,
+    tags=["User"],
+    summary="Create new user"
+)
 @db_connection_handler
 def create_user(user: schemas.UserCreate, db: Annotated[Session, Depends(get_db)]):
     """
@@ -39,7 +87,11 @@ def create_user(user: schemas.UserCreate, db: Annotated[Session, Depends(get_db)
     return user_manager.add_object(user)
 
 
-@app.post('/token')
+@app.post(
+    '/token',
+    tags=["Authentication"],
+    summary="Login and get access token",
+)
 @db_connection_handler
 def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -62,7 +114,12 @@ def login_for_access_token(
     return schemas.Token(access_token=access_token, token_type="bearer")
 
 
-@app.get('/user/me', response_model=schemas.UserResponse)
+@app.get(
+    '/user/me',
+    response_model=schemas.UserResponse,
+    tags=["User"],
+    summary="Get current user information"
+)
 @db_connection_handler
 def read_users_me(
     current_user: Annotated[schemas.UserResponse, Depends(user_login.get_current_active_user)],
@@ -73,7 +130,11 @@ def read_users_me(
     return current_user
 
 
-@app.delete('/user/delete')
+@app.delete(
+    '/user/delete',
+    tags=["User"],
+    summary="Delete current user account",
+)
 @db_connection_handler
 def delete_user(
         current_user: Annotated[schemas.UserInDB, Depends(user_login.get_current_active_user)],
@@ -90,7 +151,12 @@ def delete_user(
     )
 
 
-@app.patch('/user/update', response_model=schemas.UserResponse)
+@app.patch(
+    '/user/update',
+    response_model=schemas.UserResponse,
+    tags=["User"],
+    summary="Update user information",
+)
 @db_connection_handler
 def update_user(
         current_user: Annotated[schemas.UserInDB, Depends(user_login.get_current_active_user)],
@@ -113,7 +179,12 @@ def update_user(
     )
 
 
-@app.get('/user/clients')
+@app.get(
+    '/user/clients',
+    tags=["User", "Client"],
+    summary="Get all user's clients",
+    response_model=List[schemas.ClientInDb]
+)
 @db_connection_handler
 def get_all_clients(
         current_user: Annotated[schemas.UserInDB, Depends(user_login.get_current_active_user)],
@@ -127,7 +198,12 @@ def get_all_clients(
     return clients
 
 
-@app.get('/user/templates')
+@app.get(
+    '/user/templates',
+    tags=["User", "Template"],
+    summary="Get all user's templates",
+    response_model=List[schemas.DocumentTemplateInDb]
+)
 @db_connection_handler
 def get_all_templates(
         current_user: Annotated[schemas.UserInDB, Depends(user_login.get_current_active_user)],
@@ -141,7 +217,12 @@ def get_all_templates(
     return templates
 
 
-@app.post('/client/add', response_model=schemas.ClientInDb)
+@app.post(
+    '/client/add',
+    response_model=schemas.ClientInDb,
+    tags=["Client"],
+    summary="Add new client"
+)
 @db_connection_handler
 def add_client(
         client: schemas.Client,
@@ -157,7 +238,12 @@ def add_client(
     return client_manager.add_object(client)
 
 
-@app.get('/client/{client_id}', response_model=schemas.ClientResponse)
+@app.get(
+    '/client/{client_id}',
+    response_model=schemas.ClientResponse,
+    tags=["Client"],
+    summary="Get client details"
+)
 @db_connection_handler
 def get_client(
         client_id: int,
@@ -173,7 +259,11 @@ def get_client(
     return client, client_address_id_dict
 
 
-@app.delete('/client/{client_id}')
+@app.delete(
+    '/client/{client_id}',
+    tags=["Client"],
+    summary="Delete client",
+)
 @db_connection_handler
 def delete_client(
         client_id: int,
@@ -189,7 +279,12 @@ def delete_client(
     return JSONResponse(content={"client": client.id, "message": "Client was successfully deleted"}, status_code=200)
 
 
-@app.patch('/client/{client_id}', response_model=schemas.ClientInDb)
+@app.patch(
+    '/client/{client_id}',
+    response_model=schemas.ClientInDb,
+    tags=["Client"],
+    summary="Update client information",
+)
 @db_connection_handler
 def update_client(
         client_id: int,
@@ -209,7 +304,12 @@ def update_client(
     )
 
 
-@app.post('/client/{client_id}/address', response_model=schemas.AddressInDb)
+@app.post(
+    '/client/{client_id}/address',
+    response_model=schemas.AddressInDb,
+    tags=["Address", "Client"],
+    summary="Add client address"
+)
 @db_connection_handler
 def add_address(
         client_id: int,
@@ -227,7 +327,12 @@ def add_address(
     return address_manager.add_object(address)
 
 
-@app.get('/address/{address_id}', response_model=schemas.AddressInDb)
+@app.get(
+    '/address/{address_id}',
+    response_model=schemas.AddressInDb,
+    tags=["Address"],
+    summary="Get address details"
+)
 @db_connection_handler
 def get_address(
         address_id: int,
@@ -242,7 +347,11 @@ def get_address(
     return address
 
 
-@app.delete('/address/{address_id}')
+@app.delete(
+    '/address/{address_id}',
+    tags=["Address"],
+    summary="Delete address",
+)
 @db_connection_handler
 def delete_address(
         address_id: int,
@@ -258,7 +367,11 @@ def delete_address(
     return JSONResponse(content={"address": address.id, "message": "Address was successfully deleted"}, status_code=200)
 
 
-@app.patch('/address/{address_id}')
+@app.patch(
+    '/address/{address_id}',
+    tags=["Address"],
+    summary="Update address information",
+)
 @db_connection_handler
 def update_address(
         address_id: int,
@@ -278,7 +391,12 @@ def update_address(
     )
 
 
-@app.post('/template/upload', response_model=schemas.DocumentTemplateInDb)
+@app.post(
+    '/template/upload',
+    response_model=schemas.DocumentTemplateInDb,
+    tags=["Template"],
+    summary="Upload document template",
+)
 @db_connection_handler
 def upload_template(
         current_user: Annotated[schemas.UserInDB, Depends(user_login.get_current_active_user)],
@@ -302,7 +420,11 @@ def upload_template(
     return template_manager.add_object(template_schema)
 
 
-@app.delete('/template/{template_id}')
+@app.delete(
+    '/template/{template_id}',
+    tags=["Template"],
+    summary="Delete document template",
+)
 @db_connection_handler
 def delete_template(
         template_id: int,
@@ -322,7 +444,11 @@ def delete_template(
     )
 
 
-@app.patch('/template/{template_id}')
+@app.patch(
+    '/template/{template_id}',
+    tags=["Template"],
+    summary="Update template name"
+)
 @db_connection_handler
 def update_template(
         template_id: int,
@@ -342,7 +468,11 @@ def update_template(
     )
 
 
-@app.post('/template/{template_id}/generate')
+@app.post(
+    '/template/{template_id}/generate',
+    tags=["Template"],
+    summary="Generate document from template",
+)
 @db_connection_handler
 def generate_file(
         template_id: int,

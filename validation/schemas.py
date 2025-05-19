@@ -127,7 +127,7 @@ class ClientBase(BaseModel):
 
 class Client(ClientBase):
     phone_number: Annotated[str | None, AfterValidator(validate_phone_number)] = Field(
-        default=None, examples=['+4912345678910']
+        default=None, examples=['+4915112534961']
     )
     email: EmailStr | None = None
 
