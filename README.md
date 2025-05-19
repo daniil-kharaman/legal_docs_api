@@ -36,6 +36,39 @@
 
 ---
 
+## 📐 DOCX Template Format
+
+Only **.docx** files that follow the placeholder syntax below can be uploaded. The backend validates the template before saving it.
+
+### Placeholder Rules
+
+| Syntax | Description |
+|--------|-------------|
+|`${VARIABLE}`|Simple scalar field (e.g. `${DATE}`) replaced at render time.|
+|`${PARTY1_START}` … `${PARTY1_END}`|Block that is repeated for each attribute of the first party (name, address …).|
+|`${PARTY2_START}` … `${PARTY2_END}`|Same for the second party. Extend pattern for additional parties.|
+|Inside a block|Use nested placeholders such as `${NAME}`, `${ADDRESS}`, `${BIRTH}`.|
+
+*The placeholders follow **python‑docx‑template** / **Jinja2** `${...}` notation, so you may embed basic filters and conditionals if needed.*
+
+### Minimal Example
+
+```text
+POWER OF ATTORNEY
+Dated: ${DATE}
+
+KNOW ALL MEN BY THESE PRESENTS
+
+that I, ${PARTY1_START}${NAME}, residing at ${ADDRESS}, born on ${BIRTH}${PARTY1_END}
+(hereinafter referred to as the "Principal"), do hereby appoint
+${PARTY2_START}${NAME}, residing at ${ADDRESS}, born on ${BIRTH}${PARTY2_END}
+(hereinafter referred to as the "Agent"), to be my true and lawful Attorney‑in‑Fact…
+```
+
+An illustrated sample lives under **`templates/PA.docx`**. Use it as a blueprint for your own contracts.
+
+---
+
 ## 🙏 Acknowledgements
 
 - [FastAPI  team](https://fastapi.tiangolo.com/) for the awesome framework
