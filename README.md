@@ -1,27 +1,47 @@
-# Deploy FastAPI on Render
+# Legal Docs API 📄⚖️
 
-Use this repo as a template to deploy a Python [FastAPI](https://fastapi.tiangolo.com) service on Render.
 
-See https://render.com/docs/deploy-fastapi or follow the steps below:
 
-## Manual Steps
+> **Legal Docs API** is a fast, opinionated RESTful service for **secure storage, generation and lifecycle management of legal documents**. It is built with [FastAPI](https://fastapi.tiangolo.com/) and ships with batteries‑included DX: typed Pydantic models, OpenAPI docs, JWT auth and one‑click deployment to Render.
 
-1. You may use this repository directly or [create your own repository from this template](https://github.com/render-examples/fastapi/generate) if you'd like to customize the code.
-2. Create a new Web Service on Render.
-3. Specify the URL to your new repository or this repository.
-4. Render will automatically detect that you are deploying a Python service and use `pip` to download the dependencies.
-5. Specify the following as the Start Command.
+---
 
-    ```shell
-    uvicorn main:app --host 0.0.0.0 --port $PORT
-    ```
+## ✨ Features
 
-6. Click Create Web Service.
+|  |  Description                                                    |
+|---|-----------------------------------------------------------------|
+|🔐 **Authentication**| JSON Web Token (JWT) based user auth & role management          |
+|📄 **Document CRUD**| Create, read, update & delete legal documents via REST endpoints |
+|⬆️ **File Uploads**| Upload **DOCX template files**                  |
+|📝 **Generation**| Generate documents from Jinja2/Docx‑templater templates on demand |
+|✅ **Validation**| Pydantic schemas validate every request & response              |
+|📚 **Interactive Docs**| Auto‑generated Swagger UI at `/docs` & Redoc at `/redoc`        |
+|💾 **Persistence**| SQLAlchemy models + Alembic migrations (PostgreSQL by default)  |
+|☁️ **Zero‑config Deployment**| `render.yaml` for instant deployment to [Render](https://render.com) |
 
-Or simply click:
+---
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/render-examples/fastapi)
+## 📦 Tech Stack
 
-## Thanks
+- **Python 3.12**
+- **FastAPI** + **Uvicorn** ASGI server
+- **Pydantic v2** for data validation
+- **SQLAlchemy 2** ORM
+- **Alembic** migrations
+- **PyJWT** / **fastapi‑users** for auth
+- Optional: **Docker** & **Render** for hosting
 
-Thanks to [Harish](https://harishgarg.com) for the [inspiration to create a FastAPI quickstart for Render](https://twitter.com/harishkgarg/status/1435084018677010434) and for some sample code!
+*(Exact versions are pinned in `requirements.txt`)*
+
+
+---
+
+## 🙏 Acknowledgements
+
+- [FastAPI  team](https://fastapi.tiangolo.com/) for the awesome framework
+- [Render](https://render.com) for the generous free tier
+- Inspired by the community examples in [awesome‑readme](https://github.com/matiassingers/awesome-readme)
+
+---
+
+> Made with ❤️ and a lot of ☕️ by **Daniil Kharaman**
