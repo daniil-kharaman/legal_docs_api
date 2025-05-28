@@ -13,6 +13,7 @@ from authentication.authentication import ACCESS_TOKEN_EXPIRE_MINUTES
 from authentication import user_login
 from validation import validation, schemas
 from validation.validation import db_connection_handler
+from storage.templates_storage import save_file_in_s3, delete_file_s3, get_file_s3
 
 
 try:
@@ -407,21 +408,39 @@ def upload_template(
     """
     Upload a new document template after validating the file and template name.
     """
-    upload_directory = os.path.join('document_templates', str(current_user.id))
-    if not os.path.exists(upload_directory):
-        os.makedirs(upload_directory)
     template_manager = TemplateManager(db=db, object_id=None, user_id=current_user.id)
     validation.validate_template(template_name, template_manager.template_in_database)
-    template_path = os.path.join(upload_directory, file.filename)
-    validation.validate_file_name(template_path, template_manager.template_path_in_db)
+    object_key = f"document_templates/{str(current_user.id)}/{template_name}.docx"
+    validation.validate_file_name(object_key, template_manager.template_path_in_db)
     parsed_template = validation.parse_template(file)
-    template_schema = schemas.DocumentTemplate(template_name=template_name, template_path=template_path)
-    validation.save_file_in_directory(parsed_template, template_path)
+    template_schema = schemas.DocumentTemplate(template_name=template_name, template_path=object_key)
+    save_file_in_s3(parsed_template, object_key)
     return template_manager.add_object(template_schema)
+
+
+@app.get(
+    '/template/{template_id}',
+    response_model=schemas.DocumentTemplateInDb,
+    tags=["Template"],
+    summary="Get template details",
+)
+@db_connection_handler
+def get_template(
+        template_id: int,
+        current_user: Annotated[schemas.UserInDB, Depends(user_login.get_current_active_user)],
+        db: Annotated[Session, Depends(get_db)]
+):
+    """
+    Retrieve a specific template by ID.
+    """
+    template_manager = TemplateManager(db=db, object_id=template_id, user_id=current_user.id)
+    template = validation.get_template_from_db(template_id, template_manager.get_object)
+    return template
 
 
 @app.delete(
     '/template/{template_id}',
+    response_model=schemas.DocumentTemplateInDb,
     tags=["Template"],
     summary="Delete document template",
 )
@@ -436,7 +455,7 @@ def delete_template(
     """
     template_manager = TemplateManager(db=db, object_id=template_id, user_id=current_user.id)
     template = validation.get_template_from_db(template_id, template_manager.get_object)
-    validation.delete_file(template.template_path)
+    delete_file_s3(template.template_path)
     template_manager.delete_object()
     return JSONResponse(
         content={"template": template.id, "message": "Template was successfully deleted"},
@@ -484,16 +503,17 @@ def generate_file(
     Generate a document file from a template using the provided context.
     """
     template_manager = TemplateManager(db=db, object_id=template_id, user_id=current_user.id)
-    template = validation.get_template_from_db(template_id, template_manager.get_object)
+    template_in_db = validation.get_template_from_db(template_id, template_manager.get_object)
     parsed_context = validation.parse_context(context, db)
     if not parsed_context:
         raise HTTPException(status_code=400, detail='Impossible to parse the context')
-    rendered_template = validation.render_template(template.template_path, parsed_context)
+    template_stream = get_file_s3(template_in_db.template_path)
+    rendered_template = validation.render_template(template_stream, parsed_context)
     if not rendered_template:
         raise HTTPException(status_code=400, detail='Impossible to render the template')
     headers = {
         "Content-Disposition": (
-            f"attachment; filename={template.template_name}"
+            f"attachment; filename={template_in_db.template_name}"
         )
     }
     return StreamingResponse(

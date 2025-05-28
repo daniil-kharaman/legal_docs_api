@@ -10,6 +10,7 @@ from docxtpl import DocxTemplate
 from io import BytesIO
 from sqlalchemy.exc import OperationalError, ArgumentError
 from storage.data_manager import ClientManager
+from botocore.exceptions import ClientError, BotoCoreError
 
 
 def db_connection_handler(func):
@@ -157,23 +158,7 @@ def validate_file(file: Annotated[UploadFile, File()]):
         )
 
 
-@validate_file_operation
-def delete_file(path):
-    """
-    Delete a file at the specified path; raise an HTTP error if the operation fails.
-    """
-    os.remove(path)
-
-
-@validate_file_operation
-def save_file_in_directory(file: Document, path):
-    """
-    Save a Document object to the specified path; raise an HTTP error if the operation fails.
-    """
-    file.save(path)
-
-
-def parse_template(template_file: UploadFile) -> Document:
+def parse_template(template_file: UploadFile):
     """
     Parse a DOCX template file and replace placeholders with Jinja2 syntax; raise HTTP 400 on error.
     """
@@ -190,7 +175,10 @@ def parse_template(template_file: UploadFile) -> Document:
         }
         doc = Document(template_file.file)
         docx_replace(doc, **replacement_context)
-        return doc
+        buffer = BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+        return buffer
     except Exception as e:
         print(f"Error: {e}")
         raise HTTPException(status_code=400, detail='Something went wrong. Try again.')
@@ -224,13 +212,32 @@ def parse_context(context: GenContext, db):
 
 
 @validate_file_operation
-def render_template(path, context):
+def render_template(buffer, context):
     """
     Render a DOCX template with the provided context and return the result as a BytesIO buffer.
     """
-    doc = DocxTemplate(path)
+    doc = DocxTemplate(buffer)
     doc.render(context)
     buffer = BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     return buffer
+
+
+def aws_validation(func):
+    """
+    Decorator that handles AWS and boto3 errors.
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except ClientError as e:
+            error_code = e.response['Error']['Code']
+            error_message = e.response['Error']['Message']
+            raise HTTPException(status_code=400, detail=f"AWS Error: {error_code} - {error_message}")
+        except BotoCoreError as e:
+            raise HTTPException(status_code=400, detail=f"boto3 Error: {e}")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error: {e}")
+    return wrapper

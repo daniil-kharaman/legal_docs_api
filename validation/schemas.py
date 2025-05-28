@@ -138,7 +138,7 @@ class ClientUpdate(BaseModel):
     lastname: str | None = Field(**CLIENT_KWARGS_DEFAULT_NONE, examples=['Doe'])
     birthdate: date | None = None
     phone_number: Annotated[str | None, AfterValidator(validate_phone_number)] = Field(
-        default=None, examples=['+4912345678910']
+        default=None, examples=['+4915112534961']
     )
     email: EmailStr | None = None
 
