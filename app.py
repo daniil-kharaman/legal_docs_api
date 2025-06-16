@@ -1,10 +1,9 @@
-from fastapi import Depends, FastAPI, HTTPException, UploadFile, status
+from fastapi import Depends, FastAPI, HTTPException, UploadFile, status, File
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy import exc
 from storage import db_models, database
-import os
 from typing import Annotated, List
 from storage.data_manager import ClientManager, AddressManager, TemplateManager, UserManager
 from datetime import timedelta
@@ -14,6 +13,7 @@ from authentication import user_login
 from validation import validation, schemas
 from validation.validation import db_connection_handler
 from storage.templates_storage import save_file_in_s3, delete_file_s3, get_file_s3
+from ai.photo_to_text_ai import process_id_photo
 
 
 try:
@@ -524,3 +524,20 @@ def generate_file(
         ),
         headers=headers
     )
+
+
+@app.post(
+    '/client/upload_photo_id',
+    tags=["Client"],
+    summary="Upload a photo of client ID to fetch client's data",
+)
+
+async def upload_photo_id(
+        file: Annotated[UploadFile, Depends(validation.validate_image)],
+        current_user: Annotated[schemas.UserInDB, Depends(user_login.get_current_active_user)]
+):
+    """
+    Upload a client's ID image and extract personal data using Document AI.
+    """
+    processed_data = validation.validate_process_id_photo(file, process_id_photo)
+    return await processed_data

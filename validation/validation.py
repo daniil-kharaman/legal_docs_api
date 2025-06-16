@@ -11,6 +11,7 @@ from io import BytesIO
 from sqlalchemy.exc import OperationalError, ArgumentError
 from storage.data_manager import ClientManager
 from botocore.exceptions import ClientError, BotoCoreError
+import imghdr
 
 
 def db_connection_handler(func):
@@ -241,3 +242,28 @@ def aws_validation(func):
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error: {e}")
     return wrapper
+
+
+async def validate_process_id_photo(file: UploadFile, process_photo_func):
+    """
+    Raise an HTTP 500 error if the process of fetching data from image fails.
+    """
+    processed_data = await process_photo_func(file)
+    if processed_data is None:
+        raise HTTPException(status_code=500, detail='Error while processing an image. Try again later.')
+    return processed_data
+
+
+async def validate_image(file: Annotated[UploadFile, File()]):
+    """
+    Validate that the uploaded file is a jpeg or png file; raise appropriate HTTP errors.
+    """
+    allowed_images_types = ['jpeg', 'png']
+    content = await file.read()
+    await file.seek(0)
+    actual_type = imghdr.what(None, h=content)
+    if actual_type is None:
+        raise HTTPException(status_code=400, detail='File is not an image')
+    if actual_type not in allowed_images_types:
+        raise HTTPException(status_code=400, detail=f"Type {actual_type} is not allowed")
+    return file
