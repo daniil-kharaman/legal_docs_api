@@ -96,6 +96,9 @@ class ClientManager(DbManager):
         )).first()
 
 
+
+
+
 class AddressManager(DbManager):
     def __init__(self, db, object_id, user_id=None, client_id=None):
         super().__init__(
@@ -215,3 +218,31 @@ class UserManager(DbManager):
             setattr(db_object, key, value)
         self._db.commit()
         return updated_pydantic_object
+
+
+class TokenManager(DbManager):
+    def __init__(self, db, object_id, user_id):
+        super().__init__(
+            db=db,
+            object_id=object_id,
+            schema=None,
+            update_schema=None,
+            in_db_schema=None,
+            db_model=db_models.UserToken,
+            user_id=user_id
+        )
+
+
+    def get_object_by_name(self, name):
+        token = self._db.query(self._db_model).where(
+            self._db_model.token_name == name,
+            self._db_model.user_id == self._user_id
+        ).first()
+        return token
+
+
+
+
+
+
+

@@ -4,6 +4,11 @@ from typing import Optional
 from datetime import date
 from storage.database import Base
 
+relationship_user_kwargs = {
+    'back_populates': 'user_data',
+    'cascade': 'all, delete-orphan',
+    'passive_deletes': True
+}
 
 class User(Base):
     __tablename__ = "user"
@@ -13,12 +18,9 @@ class User(Base):
     full_name: Mapped[Optional[str]]
     password: Mapped[str]
     disabled: Mapped[bool]
-    clients: Mapped['Client'] = relationship(
-        back_populates='user_data', cascade='all, delete-orphan', passive_deletes=True
-    )
-    templates: Mapped['DocumentTemplate'] = relationship(
-        back_populates='user_', cascade='all, delete-orphan', passive_deletes=True
-    )
+    clients: Mapped['Client'] = relationship(**relationship_user_kwargs)
+    templates: Mapped['DocumentTemplate'] = relationship(**relationship_user_kwargs)
+    tokens: Mapped['UserToken'] = relationship(**relationship_user_kwargs)
 
 
 class Client(Base):
@@ -54,4 +56,13 @@ class DocumentTemplate(Base):
     template_name: Mapped[str]
     template_path: Mapped[str]
     user_id: Mapped[int] = mapped_column(ForeignKey('user.id', ondelete='CASCADE'))
-    user_: Mapped['User'] = relationship(back_populates='templates')
+    user_data: Mapped['User'] = relationship(back_populates='templates')
+
+
+class UserToken(Base):
+    __tablename__ = "user_token"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    token_name: Mapped[str]
+    token_data: Mapped[str]
+    user_id: Mapped[int] = mapped_column(ForeignKey('user.id', ondelete='CASCADE'))
+    user_data: Mapped['User'] = relationship(back_populates='tokens')

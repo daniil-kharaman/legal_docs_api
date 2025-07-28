@@ -3,7 +3,6 @@ from fastapi import HTTPException, File, UploadFile, status, Form
 from typing import Annotated
 from validation.schemas import DocumentTemplateName, DocumentTemplateFileName, GenContext
 from pydantic import ValidationError
-import os
 from docx import Document
 from python_docx_replace import docx_replace
 from docxtpl import DocxTemplate
@@ -267,3 +266,10 @@ async def validate_image(file: Annotated[UploadFile, File()]):
     if actual_type not in allowed_images_types:
         raise HTTPException(status_code=400, detail=f"Type {actual_type} is not allowed")
     return file
+
+
+def email_sender_validation(result: dict):
+    """Validate data from the AI agent"""
+    if 'error' in result.values():
+        raise HTTPException(status_code=400, detail=result.get('message', 'Something went wrong. Try again later.'))
+    return result
