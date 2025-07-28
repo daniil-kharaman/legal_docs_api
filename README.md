@@ -1,12 +1,12 @@
 # Legal Docs API 📄 ⚖️ 
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com)
 [![Deploy](https://img.shields.io/badge/deploy-Render-purple.svg)](https://render.com)
 
 > 🚀 **Fast, opinionated RESTful service for secure storage, generation and lifecycle management of legal documents**
 
-Built with modern Python stack featuring FastAPI, Pydantic v2, SQLAlchemy 2.0, and ships with batteries-included developer experience: typed models, auto-generated OpenAPI docs, JWT authentication, and Google Document AI for automatic data extraction.
+Built with modern Python stack featuring FastAPI, Pydantic v2, SQLAlchemy 2.0, and ships with batteries-included developer experience: typed models, auto-generated OpenAPI docs, JWT authentication, Google Document AI for automatic data extraction, and multi-agent AI system powered by Google Agent Development Kit for intelligent email automation.
 
 ---
 
@@ -17,6 +17,8 @@ Built with modern Python stack featuring FastAPI, Pydantic v2, SQLAlchemy 2.0, a
 ⬆️ **File Upload System** — DOCX template processing with validation  
 📝 **Smart Generation** — Dynamic document creation from Jinja2/Docx templates  
 🤖 **AI-Powered OCR** — Google Document AI for automatic passport data extraction  
+🤖 **AI Email Agents** — Google Agent Development Kit framework for intelligent email automation  
+☁️ **AWS Storage** — Secure document template storage and management  
 ✅ **Type Safety** — Pydantic v2 schemas validate all requests & responses  
 📚 **Interactive Docs** — Auto-generated Swagger UI & ReDoc documentation  
 💾 **Robust Persistence** — SQLAlchemy 2.0 
@@ -35,9 +37,90 @@ Built with modern Python stack featuring FastAPI, Pydantic v2, SQLAlchemy 2.0, a
 | **Authentication** | PyJWT                        |
 | **Validation** | Pydantic v2                  |
 | **Document Processing** | python-docx-template, Jinja2 |
-| **AI/ML** | Google Document AI           |
+| **AI/ML** | Google Document AI, Google Agent Development Kit |
+| **Cloud Storage** | AWS S3                       |
+| **Email Automation** | Gmail API, AI Agents         |
 | **Deployment** | Render                       |
 
+---
+
+## 🤖 AI-Powered Email Automation
+
+### Intelligent Multi-Agent Email System
+
+The API features a sophisticated **multi-agent AI system** built with **Google Agent Development Kit (ADK)** and **Gemini 2.5 Flash** that automates the entire email workflow for legal communications.
+
+#### 🎯 Key Features
+
+- **Natural Language Processing**: Convert user requests into professional legal emails
+- **Client Database Integration**: Automatically retrieve client email addresses from your database
+- **Smart Recipient Resolution**: Handle multiple clients with same name using birthdate disambiguation
+- **Secure Authentication**: OAuth2 integration with Gmail API and encrypted token storage
+- **Professional Email Generation**: AI-crafted emails with appropriate legal tone and structure
+
+#### 🔧 System Architecture
+
+The email automation uses a **Sequential Agent** pipeline with specialized sub-agents:
+
+```
+User Request → Email Fetcher Agent → Email Writer Agent → Email Sender Agent → Sent Email
+```
+
+| Agent | Responsibility |
+|-------|----------------|
+| **Email Fetcher Agent** | Parses user request, extracts recipient info, queries database for email |
+| **Email Writer Agent** | Generates professional email content and subject line |
+| **Email Sender Agent** | Sends email via Gmail API with error handling |
+
+#### 📝 Usage Examples
+
+**Simple Request:**
+```json
+{
+    "user_request": "Send email to John Doe about the power of attorney document being ready"
+}
+```
+
+**With Birthdate Disambiguation:**
+```json
+{
+    "user_request": "Send contract reminder to Maria Rodriguez born on 1985-03-15"
+}
+```
+
+#### 🛡️ Security & Error Handling
+
+- **Encrypted Token Storage**: All OAuth tokens encrypted using Fernet symmetric encryption
+- **Database Transaction Management**: Automatic rollback on errors
+- **Comprehensive Validation**: Input validation with Pydantic schemas
+- **Error Recovery**: Graceful handling of authentication, database, and API errors
+
+#### 🔐 Authentication Flow
+
+1. **First Use**: OAuth2 flow opens browser for Gmail authorization
+2. **Token Storage**: Encrypted credentials saved to database
+3. **Auto-Refresh**: Automatic token renewal for seamless operation
+4. **Secure Access**: All subsequent emails sent without user intervention
+
+#### 📊 Response Format
+
+The system returns structured JSON responses for all operations:
+
+```json
+{
+    "status": "success",
+    "message": "Email sent successfully. Message ID: 18c5f2a3b4d7e8f9"
+}
+```
+
+Error responses include detailed information for troubleshooting:
+
+```json
+{
+    "status": "error",
+    "message": "Error: There are several persons with name John Smith. Specify the birthdate."
+}
+```
 
 ---
 
@@ -59,7 +142,6 @@ The API integrates **Google Document AI** for intelligent passport data extracti
 1. **Upload passport image** via `/client/upload_photo_id` endpoint
 2. **Google Document AI** processes the image using custom-trained model
 3. **Structured data** is returned in JSON format
-
 
 #### Model Accuracy
 
@@ -99,14 +181,13 @@ ${PARTY2_START}${NAME}, residing at ${ADDRESS}, born on ${BIRTH}${PARTY2_END}
 
 ---
 
-
-
 ## 🙏 Acknowledgments
 
 - [FastAPI team](https://fastapi.tiangolo.com/) for the awesome framework
+- [Google Agent Development Kit](https://ai.google.dev/adk) for the powerful AI agent framework
 - [Render](https://render.com) for the generous free tier
 - Inspired by the community examples in [awesome-readme](https://github.com/matiassingers/awesome-readme)
 
 ---
 
-> Made with ❤️ and a lot of ☕️ by **Daniil Kharaman**
+> Made with ❤️ and a lot of ☕️ by **Daniil Kharaman**

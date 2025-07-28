@@ -224,7 +224,7 @@ class DocumentTemplateFileName(BaseModel):
 class UserRequestAI(BaseModel):
     user_request: str = Field(
         min_length=1,
-        examples=['Send John Doe 01.01.1990 an email to cancel our 9 AM appointment tomorrow.']
+        examples=['Send an email to John Doe 01.01.1990 that our appointment tomorrow at 9 AM will be cancelled.']
     )
 
 
