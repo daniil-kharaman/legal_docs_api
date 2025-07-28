@@ -219,3 +219,16 @@ class DocumentTemplateName(BaseModel):
 
 class DocumentTemplateFileName(BaseModel):
     file_name: str = Field(min_length=1, max_length=50, pattern=PATTERN_TEMPLATE, examples=['Power of Attorney'])
+
+
+class UserRequestAI(BaseModel):
+    user_request: str = Field(
+        min_length=1,
+        examples=['Send John Doe 01.01.1990 an email to cancel our 9 AM appointment tomorrow.']
+    )
+
+
+class UserAuthToken(BaseModel):
+    token_name: str
+    token_data: str = Field(min_length=1)
+    user_id: int

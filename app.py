@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException, UploadFile, status, File
+from fastapi import Depends, FastAPI, HTTPException, UploadFile, status, File, Body
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -14,6 +14,8 @@ from validation import validation, schemas
 from validation.validation import db_connection_handler
 from storage.templates_storage import save_file_in_s3, delete_file_s3, get_file_s3
 from ai.photo_to_text_ai import process_id_photo
+from multi_agent_system import agent
+
 
 
 try:
@@ -541,3 +543,24 @@ async def upload_photo_id(
     """
     processed_data = validation.validate_process_id_photo(file, process_id_photo)
     return await processed_data
+
+
+@app.post(
+    '/client/send_email',
+    tags=["Client"],
+    summary="Send email to the client by entering just client's name",
+)
+async def send_email(
+        user_request: schemas.UserRequestAI,
+        current_user: Annotated[schemas.UserInDB, Depends(user_login.get_current_active_user)]
+):
+    """
+    Send an email to a client using AI agent to compose and send the message.
+    """
+    input_message = '{' + f"""
+    "user_request": "{user_request}",
+    "user_full_name": "{current_user.full_name}",
+    "user_id": "{current_user.id}"
+""" + '}'
+    result = await agent.run_agent(input_message, str(current_user.id))
+    return validation.email_sender_validation(result)
