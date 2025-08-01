@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy import exc
+from authentication.oauth import initiate_google_auth, complete_google_auth
 from storage import db_models, database
 from typing import Annotated, List
 from storage.data_manager import ClientManager, AddressManager, TemplateManager, UserManager
@@ -564,3 +565,50 @@ async def send_email(
 """ + '}'
     result = await agent.run_agent(input_message, str(current_user.id))
     return validation.email_sender_validation(result)
+
+
+@app.get(
+    '/auth/google/initiate',
+    tags=["Authentication"],
+    summary="Initiate Google OAuth authentication"
+)
+@db_connection_handler
+def initiate_google_oauth(
+        current_user: Annotated[schemas.UserInDB, Depends(user_login.get_current_active_user)]
+):
+    """
+    Initiate Google OAuth flow for Gmail API access.
+    Returns authorization URL that the frontend should redirect the user to.
+    """
+    try:
+        scopes = ['https://www.googleapis.com/auth/gmail.send']
+        auth_data = initiate_google_auth(str(current_user.id), scopes)
+        return {
+            "authorization_url": auth_data["authorization_url"],
+            "message": "Redirect user to this URL to complete Google authentication"
+        }
+    except Exception as e:
+        print(f"Google authentication error: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Google authentication failed')
+
+
+@app.get(
+    '/auth/google/callback',
+    tags=["Authentication"],
+    summary="Handle Google OAuth callback"
+)
+
+def google_oauth_callback(code: str, state: str):
+    """
+    Handle Google OAuth callback and store user credentials.
+    This endpoint is called by Google after user grants permission.
+    """
+    if not code or not state:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing required parameters")
+    try:
+        scopes = ['https://www.googleapis.com/auth/gmail.send']
+        complete_google_auth(code, state, scopes)
+        return {"message": "Google authentication completed successfully", "status": "success"}
+    except Exception as e:
+        print(f"Google authentication error: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Google authentication failed')

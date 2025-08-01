@@ -1,24 +1,18 @@
 import json
-from typing import Dict, Any, List, Tuple, Union, Generator
+from typing import Dict, Any, List, Tuple, Union
 from google.adk.agents import LlmAgent, SequentialAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
-from storage.database import SessionLocal
-from contextlib import contextmanager
+from storage.database import get_db_session
 from storage import db_models
 import base64
 from email.mime.text import MIMEText
 from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-import os.path
 from dotenv import load_dotenv
-from sqlalchemy import exc
-from sqlalchemy.orm import Session
 from storage.data_manager import TokenManager
-from validation.schemas import UserAuthToken
 from multi_agent_system import agent_validation
 from authentication.token_encryption import TokenEncryption
 
@@ -26,26 +20,6 @@ from authentication.token_encryption import TokenEncryption
 load_dotenv()
 
 GEMINI_MODEL = "gemini-2.5-flash"
-
-
-@contextmanager
-def get_db_session() -> Generator[Session, None, None]:
-
-    """Context manager for database sessions with proper error handling."""
-
-    db = None
-    try:
-        db = SessionLocal()
-        yield db
-    except exc.OperationalError as e:
-        print(f"Database operational error: {e}")
-        raise agent_validation.DatabaseError("Database server is unavailable. Please try again later.")
-    except exc.ArgumentError as e:
-        print(f"Database configuration error: {e}")
-        raise agent_validation.DatabaseError("Database configuration is invalid. Please contact support.")
-    finally:
-        if db:
-            db.close()
 
 
 def parse_full_name(full_name: str) -> Tuple[str, str]:
@@ -99,33 +73,31 @@ def auth_google(user_id: str, scopes: List[str]) -> Union[Credentials, str]:
         if token:
             decrypted_token_data = token_encryption.decrypt(token.token_data)
             creds = Credentials.from_authorized_user_info(json.loads(decrypted_token_data), scopes)
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                credentials = os.getenv('GOOGLE_AUTH_CREDS')
-                flow = InstalledAppFlow.from_client_config(json.loads(credentials), scopes)
-                creds = flow.run_local_server(port=0)
+        if creds and creds.valid:
+            return creds
+        elif creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+            updated_token_data = token_encryption.encrypt(creds.to_json())
+            token.token_data = updated_token_data
+            db.commit()
+            return creds
 
-                token_object = UserAuthToken(
-                    token_name='google_auth',
-                    token_data=token_encryption.encrypt(creds.to_json()),
-                    user_id=int(user_id)
-                )
-                agent_validation.validate_add_object(token_manager, token_object, db)
-        return creds
+        return "Error: User needs to authenticate with Google"
 
 
-def send_gmail_message(client_email: str, email_subject: str, email_text: str, user_id: str) -> str:
+def send_gmail_message(client_email: str, email_subject: str, email_text: str, user_id: str) -> Union[str, Dict[str, str]]:
 
     """Send email via Gmail API."""
 
-    SCOPES = ['https://www.googleapis.com/auth/gmail.send']
-    creds = auth_google(user_id, SCOPES)
-    if isinstance(creds, str):
-        return creds
+    scopes = ['https://www.googleapis.com/auth/gmail.send']
+    auth_result = auth_google(user_id, scopes)
+    # If auth_result is a string, it's an error message
+    if isinstance(auth_result, str):
+        return auth_result
+    
+    # If auth_result is Credentials object, proceed with sending email
     try:
-        service = build('gmail', 'v1', credentials=creds)
+        service = build('gmail', 'v1', credentials=auth_result)
         message = MIMEText(email_text)
         message['to'] = client_email
         message['subject'] = email_subject

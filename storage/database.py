@@ -1,5 +1,7 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from contextlib import contextmanager
+from typing import Generator
+from sqlalchemy import create_engine, exc
+from sqlalchemy.orm import sessionmaker, DeclarativeBase, Session
 import os
 from dotenv import load_dotenv
 
@@ -18,7 +20,13 @@ engine = create_engine(
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 class Base(DeclarativeBase):
+    pass
+
+
+class DatabaseError(Exception):
+    """Custom exception for database operations"""
     pass
 
 
@@ -31,3 +39,23 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+@contextmanager
+def get_db_session() -> Generator[Session, None, None]:
+
+    """Context manager for database sessions with proper error handling."""
+
+    db = None
+    try:
+        db = SessionLocal()
+        yield db
+    except exc.OperationalError as e:
+        print(f"Database operational error: {e}")
+        raise DatabaseError("Database server is unavailable. Please try again later.")
+    except exc.ArgumentError as e:
+        print(f"Database configuration error: {e}")
+        raise DatabaseError("Database configuration is invalid. Please contact support.")
+    finally:
+        if db:
+            db.close()
