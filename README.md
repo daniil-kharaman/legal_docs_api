@@ -91,14 +91,13 @@ User Request → Email Fetcher Agent → Email Writer Agent → Email Sender Age
 #### 🛡️ Security & Error Handling
 
 - **Encrypted Token Storage**: All OAuth tokens encrypted using Fernet symmetric encryption
-- **Database Transaction Management**: Automatic rollback on errors
 - **Comprehensive Validation**: Input validation with Pydantic schemas
 - **Error Recovery**: Graceful handling of authentication, database, and API errors
 
 #### 🔐 Authentication Flow
 
-1. **First Use**: OAuth2 flow opens browser for Gmail authorization
-2. **Token Storage**: Encrypted credentials saved to database
+1. **Initial Authorization**: User must first authenticate via `/auth/google/initiate` endpoint
+2. **Token Storage**: Encrypted credentials automatically saved to database after authorization
 3. **Auto-Refresh**: Automatic token renewal for seamless operation
 4. **Secure Access**: All subsequent emails sent without user intervention
 

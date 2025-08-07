@@ -14,7 +14,7 @@ from google.oauth2.credentials import Credentials
 from dotenv import load_dotenv
 from storage.data_manager import TokenManager
 from multi_agent_system import agent_validation
-from authentication.token_encryption import TokenEncryption
+from auth.token_encryption import TokenEncryption
 
 
 load_dotenv()
@@ -85,9 +85,8 @@ def auth_google(user_id: str, scopes: List[str]) -> Union[Credentials, str]:
         return "Error: User needs to authenticate with Google"
 
 
-def send_gmail_message(client_email: str, email_subject: str, email_text: str, user_id: str) -> Union[str, Dict[str, str]]:
-
-    """Send email via Gmail API."""
+def send_gmail_message(client_email: str, email_subject: str, email_text: str, user_id: str) -> str:
+    """Send email via Gmail API with authenticated user credentials."""
 
     scopes = ['https://www.googleapis.com/auth/gmail.send']
     auth_result = auth_google(user_id, scopes)

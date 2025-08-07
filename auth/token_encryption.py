@@ -1,6 +1,3 @@
-"""
-Token encryption utilities using Fernet symmetric encryption.
-"""
 import os
 import base64
 from cryptography.fernet import Fernet

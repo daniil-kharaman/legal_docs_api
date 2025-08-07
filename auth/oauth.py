@@ -3,7 +3,7 @@ import os
 from typing import List, Dict, Union
 from  google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
-from authentication.token_encryption import TokenEncryption, EncryptionError
+from auth.token_encryption import TokenEncryption, EncryptionError
 from storage.data_manager import TokenManager
 from storage.database import get_db_session
 from validation.schemas import UserAuthToken

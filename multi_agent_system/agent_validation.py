@@ -5,8 +5,8 @@ from storage import db_models
 import functools
 from google.oauth2.credentials import Credentials
 from storage.database import DatabaseError
-from authentication.token_encryption import EncryptionError
-from authentication.oauth import OAuthError
+from auth.token_encryption import EncryptionError
+from auth.oauth import OAuthError
 
 
 def clients_validation(clients: List[db_models.Client], birthdate: Optional[str],
@@ -46,7 +46,7 @@ def email_db_validation(func: Callable) -> Callable:
 
 
 def google_auth_validation(func: Callable) -> Callable:
-    """Decorator for handling Google authentication errors."""
+    """Decorator for handling Google auth errors."""
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs) -> Union[Credentials, str]:
@@ -67,6 +67,6 @@ def google_auth_validation(func: Callable) -> Callable:
             print(f"JSON parsing error: {e}")
             return "Error: Invalid credential format. Please re-authenticate."
         except Exception as e:
-            print(f"Unexpected authentication error: {e}")
+            print(f"Unexpected auth error: {e}")
             return "Error: Authentication failed. Please try again."
     return wrapper

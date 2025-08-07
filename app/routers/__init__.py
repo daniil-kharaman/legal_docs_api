@@ -1,0 +1,1 @@
+from app.routers import address, ai, auth, client, template, user

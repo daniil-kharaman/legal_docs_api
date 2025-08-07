@@ -1,25 +1,23 @@
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
+from typing import Annotated, Union
 import jwt
 from fastapi import Depends, HTTPException, status
 from jwt.exceptions import InvalidTokenError
 from sqlalchemy.orm import Session
 from storage.data_manager import UserManager
 from storage.database import get_db
-from authentication.authentication import pwd_context, oauth2_scheme, SECRET_KEY, ALGORITHM
-from validation.validation import db_connection_handler
+from auth.authentication import pwd_context, oauth2_scheme, SECRET_KEY, ALGORITHM
 from validation import schemas
 
 
-def verify_password(plain_password, hashed_password):
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verify a plain password against its hashed version using the configured password context.
     """
     return pwd_context.verify(plain_password, hashed_password)
 
 
-@db_connection_handler
-def authenticate_user(username: str, password: str, db: Annotated[Session, Depends(get_db)]):
+def authenticate_user(username: str, password: str, db: Annotated[Session, Depends(get_db)]) -> Union[object, bool]:
     """
     Authenticate a user by username and password; return the user object if credentials are valid.
     """
@@ -32,7 +30,7 @@ def authenticate_user(username: str, password: str, db: Annotated[Session, Depen
     return user
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """
     Generate a JWT access token with an optional expiration time.
     """
@@ -46,8 +44,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
-@db_connection_handler
-def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[Session, Depends(get_db)]):
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[Session, Depends(get_db)]) -> object:
     """
     Retrieve the current user based on the provided JWT token; raise HTTP 401 if token is invalid.
     """

@@ -45,7 +45,7 @@ def validate_file_operation(func):
     return wrapper
 
 
-def validate_username_in_db(user_username):
+def validate_username_in_db(user_username: str | None) -> None:
     """
     Raise an HTTP 400 error if the provided username already exists in the database.
     """
@@ -56,7 +56,7 @@ def validate_username_in_db(user_username):
         )
 
 
-def validate_email_in_db(user_email):
+def validate_email_in_db(user_email: str | None) -> None:
     """
     Raise an HTTP 400 error if the provided email already exists in the database.
     """
@@ -67,7 +67,7 @@ def validate_email_in_db(user_email):
         )
 
 
-def get_client_from_db(client_id: int, get_client_func):
+def get_client_from_db(client_id: int, get_client_func) -> object:
     """
     Retrieve a client by ID using the provided function; raise HTTP 400 if not found.
     """
@@ -77,7 +77,7 @@ def get_client_from_db(client_id: int, get_client_func):
     return client
 
 
-def get_template_from_db(template_id: int, get_template_func):
+def get_template_from_db(template_id: int, get_template_func) -> object:
     """
     Retrieve a template by ID using the provided function; raise HTTP 400 if not found.
     """
@@ -87,7 +87,7 @@ def get_template_from_db(template_id: int, get_template_func):
     return template
 
 
-def validate_address_by_client(client_id: int, address_relate_to_client_func):
+def validate_address_by_client(client_id: int, address_relate_to_client_func) -> None:
     """
     Check if a client already has an address; raise HTTP 400 if an address exists.
     """
@@ -96,7 +96,7 @@ def validate_address_by_client(client_id: int, address_relate_to_client_func):
         raise HTTPException(status_code=400, detail=f"Client with id {client_id} has already the address")
 
 
-def get_address_from_db(address_id: int, get_client_address_func):
+def get_address_from_db(address_id: int, get_client_address_func) -> object:
     """
     Retrieve an address by ID using the provided function; raise HTTP 400 if not found.
     """
@@ -106,7 +106,7 @@ def get_address_from_db(address_id: int, get_client_address_func):
     return address
 
 
-def validate_template(template_name: str, template_in_database_func):
+def validate_template(template_name: str, template_in_database_func) -> None:
     """
     Raise an HTTP 400 error if a template with the given name already exists.
     """
@@ -115,7 +115,7 @@ def validate_template(template_name: str, template_in_database_func):
         raise HTTPException(status_code=400, detail=f"Template {template_name} already exists")
 
 
-def validate_file_name(file_path: str, template_path_in_db_func):
+def validate_file_name(file_path: str, template_path_in_db_func) -> None:
     """
     Raise an HTTP 400 error if a file with the given path already exists.
     """
@@ -124,7 +124,7 @@ def validate_file_name(file_path: str, template_path_in_db_func):
         raise HTTPException(status_code=400, detail=f"File already exists")
 
 
-async def validate_template_name(template_name: Annotated[str, Form()]):
+async def validate_template_name(template_name: Annotated[str, Form()]) -> str:
     """
     Validate the template name using a Pydantic schema; raise HTTP 422 on validation error.
     """
@@ -138,7 +138,7 @@ async def validate_template_name(template_name: Annotated[str, Form()]):
         )
 
 
-def validate_file(file: Annotated[UploadFile, File()]):
+def validate_file(file: Annotated[UploadFile, File()]) -> UploadFile:
     """
     Validate that the uploaded file is a DOCX file and has a valid filename; raise appropriate HTTP errors.
     """
@@ -158,7 +158,7 @@ def validate_file(file: Annotated[UploadFile, File()]):
         )
 
 
-def parse_template(template_file: UploadFile):
+def parse_template(template_file: UploadFile) -> BytesIO:
     """
     Parse a DOCX template file and replace placeholders with Jinja2 syntax; raise HTTP 400 on error.
     """
@@ -184,7 +184,7 @@ def parse_template(template_file: UploadFile):
         raise HTTPException(status_code=400, detail='Something went wrong. Try again.')
 
 
-def parse_context(context: GenContext, db):
+def parse_context(context: GenContext, db) -> dict:
     """
     Construct a context dictionary for template rendering by retrieving client data from the database.
     """
@@ -212,7 +212,7 @@ def parse_context(context: GenContext, db):
 
 
 @validate_file_operation
-def render_template(buffer, context):
+def render_template(buffer: BytesIO, context: dict) -> BytesIO:
     """
     Render a DOCX template with the provided context and return the result as a BytesIO buffer.
     """
@@ -243,7 +243,7 @@ def aws_validation(func):
     return wrapper
 
 
-async def validate_process_id_photo(file: UploadFile, process_photo_func):
+async def validate_process_id_photo(file: UploadFile, process_photo_func) -> dict:
     """
     Raise an HTTP 500 error if the process of fetching data from image fails.
     """
@@ -253,7 +253,7 @@ async def validate_process_id_photo(file: UploadFile, process_photo_func):
     return processed_data
 
 
-async def validate_image(file: Annotated[UploadFile, File()]):
+async def validate_image(file: Annotated[UploadFile, File()]) -> UploadFile:
     """
     Validate that the uploaded file is a jpeg or png file; raise appropriate HTTP errors.
     """
@@ -268,7 +268,7 @@ async def validate_image(file: Annotated[UploadFile, File()]):
     return file
 
 
-def email_sender_validation(result: dict):
+def email_sender_validation(result: dict) -> dict:
     """Validate data from the AI agent"""
     if 'error' in result.values():
         raise HTTPException(status_code=400, detail=result.get('message', 'Something went wrong. Try again later.'))

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from authentication.authentication import pwd_context
+from auth.authentication import pwd_context
 from storage import db_models
 from validation import schemas
 from fastapi.encoders import jsonable_encoder
@@ -239,10 +239,3 @@ class TokenManager(DbManager):
             self._db_model.user_id == self._user_id
         ).first()
         return token
-
-
-
-
-
-
-

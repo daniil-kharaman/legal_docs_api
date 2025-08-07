@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 import json
-
+from typing import Dict, Optional, List, Any, MutableSequence
 
 load_dotenv()
 
@@ -17,7 +17,7 @@ credentials_info = json.loads(credentials_json)
 document_ai_api_endpoint = os.getenv('DOCUMENT_AI_API_ENDPOINT')
 
 
-def parse_birthdate(date):
+def parse_birthdate(date: str) -> Optional[datetime.date]:
     """
     Parses a birthdate string into a datetime.date object.
     Returns None if the input is invalid or parsing fails.
@@ -42,7 +42,7 @@ def parse_birthdate(date):
         return None
 
 
-def format_processed_data(entities):
+def format_processed_data(entities: MutableSequence[documentai.Document.Entity]) -> Dict[str, Any]:
     """
     Processes and formats extracted entities into a structured dictionary.
     Handles special formatting for birth dates and groups repeated entity types into lists.
@@ -67,7 +67,7 @@ def format_processed_data(entities):
     return processed_data
 
 
-async def process_id_photo(file: UploadFile):
+async def process_id_photo(file: UploadFile) -> Optional[Dict[str, Any]]:
     """
     Processes an uploaded ID photo using Google Document AI to extract structured data.
     Sends the image to the configured Document AI processor, extracts entities, and returns formatted results.
