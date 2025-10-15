@@ -8,7 +8,6 @@ from auth.authentication import ACCESS_TOKEN_EXPIRE_MINUTES
 from auth.oauth import initiate_google_auth, complete_google_auth
 from storage.database import get_db
 from validation import schemas
-from validation.validation import db_connection_handler
 
 router = APIRouter(
     prefix='/auth',
@@ -42,7 +41,7 @@ def login_for_access_token(
 
 @router.get(
     '/google/initiate',
-    summary="Initiate Google OAuth auth"
+    summary="Initiate Google OAuth auth",
 )
 def initiate_google_oauth(
         current_user: Annotated[schemas.UserInDB, Depends(user_login.get_current_active_user)]
@@ -52,22 +51,22 @@ def initiate_google_oauth(
     Returns authorization URL that the frontend should redirect the user to.
     """
     try:
-        scopes = ['https://www.googleapis.com/auth/gmail.send']
-        auth_data = initiate_google_auth(str(current_user.id), scopes)
+        auth_data = initiate_google_auth(str(current_user.id))
         return {
             "authorization_url": auth_data["authorization_url"],
             "message": "Redirect user to this URL to complete Google auth"
         }
     except Exception as e:
-        print(f"Google auth error: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Google auth failed')
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Google auth failed: {str(e)}"
+        )
 
 
 @router.get(
     '/google/callback',
     summary="Handle Google OAuth callback"
 )
-
 def google_oauth_callback(code: str, state: str):
     """
     Handle Google OAuth callback and store user credentials.
@@ -76,9 +75,11 @@ def google_oauth_callback(code: str, state: str):
     if not code or not state:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing required parameters")
     try:
-        scopes = ['https://www.googleapis.com/auth/gmail.send']
-        complete_google_auth(code, state, scopes)
+        complete_google_auth(code, state)
         return {"message": "Google auth completed successfully", "status": "success"}
     except Exception as e:
-        print(f"Google auth error: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Google auth failed')
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Google auth failed: {str(e)}"
+        )
+

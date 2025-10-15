@@ -6,7 +6,6 @@ from auth import user_login
 from storage.data_manager import ClientManager, AddressManager
 from storage.database import get_db
 from validation import schemas, validation
-from validation.validation import db_connection_handler
 
 router = APIRouter(
     prefix='/client',
@@ -93,7 +92,7 @@ def update_client(
 
 
 @router.post(
-    '{client_id}/address',
+    '/{client_id}/address',
     response_model=schemas.AddressInDb,
     summary="Add client address"
 )

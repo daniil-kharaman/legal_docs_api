@@ -3,10 +3,10 @@ from datetime import date
 from typing import Annotated
 import phonenumbers
 
-PATTERN_USER_FULLNAME = r'^(\p{L}+[\-\']?\p{L}+\s?)+$'
-PATTERN_CLIENT = r'^\p{L}+[\-\']?\p{L}+$'
-PATTERN_ADDRESS = r'^([\p{L}\d\'\-]+\s?)+$'
-PATTERN_TEMPLATE = r'^([\p{L}\d\_\/\.]+\s?)+$'
+PATTERN_USER_FULLNAME = r'^([a-zA-ZÀ-ÿ]+[\-\']?[a-zA-ZÀ-ÿ]+\s?)+$'
+PATTERN_CLIENT = r'^[a-zA-ZÀ-ÿ]+[\-\']?[a-zA-ZÀ-ÿ]+$'
+PATTERN_ADDRESS = r'^([a-zA-ZÀ-ÿ\d\'\-]+\s?)+$'
+PATTERN_TEMPLATE = r'^([a-zA-ZÀ-ÿ\d\_\/\.]+\s?)+$'
 CLIENT_KWARGS = {
     'min_length': 1,
     'max_length': 30,

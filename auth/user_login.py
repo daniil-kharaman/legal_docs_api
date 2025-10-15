@@ -3,6 +3,7 @@ from typing import Annotated, Union
 import jwt
 from fastapi import Depends, HTTPException, status
 from jwt.exceptions import InvalidTokenError
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 from storage.data_manager import UserManager
 from storage.database import get_db
@@ -59,7 +60,7 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotate
         if username is None:
             raise credentials_exception
         token_data = schemas.TokenData(username=username)
-    except InvalidTokenError:
+    except (InvalidTokenError, ValidationError):
         raise credentials_exception
     user_manager = UserManager(db, object_id=None)
     user = user_manager.user_in_database(username_or_email=username)

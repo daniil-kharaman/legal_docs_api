@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile
+from fastapi import APIRouter, Depends, status, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from auth import user_login
@@ -7,7 +7,7 @@ from storage.data_manager import TemplateManager
 from storage.database import get_db
 from storage.templates_storage import save_file_in_s3, delete_file_s3, get_file_s3
 from validation import schemas, validation
-from validation.validation import db_connection_handler
+from template_processor import docx_processor
 
 router = APIRouter(
     prefix='/template',
@@ -32,7 +32,7 @@ def upload_template(
     validation.validate_template(template_name, template_manager.template_in_database)
     object_key = f"document_templates/{str(current_user.id)}/{template_name}.docx"
     validation.validate_file_name(object_key, template_manager.template_path_in_db)
-    parsed_template = validation.parse_template(file)
+    parsed_template = docx_processor.parse_template(file)
     template_schema = schemas.DocumentTemplate(template_name=template_name, template_path=object_key)
     save_file_in_s3(parsed_template, object_key)
     return template_manager.add_object(template_schema)
@@ -116,13 +116,9 @@ def generate_file(
     """
     template_manager = TemplateManager(db=db, object_id=template_id, user_id=current_user.id)
     template_in_db = validation.get_template_from_db(template_id, template_manager.get_object)
-    parsed_context = validation.parse_context(context, db)
-    if not parsed_context:
-        raise HTTPException(status_code=400, detail='Impossible to parse the context')
+    parsed_context = docx_processor.parse_context(context, db)
     template_stream = get_file_s3(template_in_db.template_path)
-    rendered_template = validation.render_template(template_stream, parsed_context)
-    if not rendered_template:
-        raise HTTPException(status_code=400, detail='Impossible to render the template')
+    rendered_template = docx_processor.render_template(template_stream, parsed_context)
     headers = {
         "Content-Disposition": (
             f"attachment; filename={template_in_db.template_name}"

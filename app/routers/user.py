@@ -4,9 +4,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from auth import user_login
 from storage.data_manager import UserManager, ClientManager, TemplateManager
-from storage.database import get_db, DatabaseError
+from storage.database import get_db
 from validation import schemas, validation
-from validation.validation import db_connection_handler
+
 
 router = APIRouter(
     prefix='/user',

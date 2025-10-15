@@ -1,1 +1,1 @@
-from app.routers import address, ai, auth, client, template, user
+from app.routers import address, ai, auth, client, template, user, ai_chat_ws

@@ -3,28 +3,9 @@ from fastapi import HTTPException, File, UploadFile, status, Form
 from typing import Annotated
 from validation.schemas import DocumentTemplateName, DocumentTemplateFileName, GenContext
 from pydantic import ValidationError
-from docx import Document
-from python_docx_replace import docx_replace
-from docxtpl import DocxTemplate
-from io import BytesIO
 from sqlalchemy.exc import OperationalError, ArgumentError
-from storage.data_manager import ClientManager
 from botocore.exceptions import ClientError, BotoCoreError
 import imghdr
-
-
-def db_connection_handler(func):
-    """
-    Decorator that handles database connection errors and raises HTTP 500 if the database is inaccessible.
-    """
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-             return func(*args, **kwargs)
-        except (OperationalError, ArgumentError) as e:
-            print(f"Database cannot be accessed: {e}")
-            raise HTTPException(status_code=500, detail='Database cannot be accessed')
-    return wrapper
 
 
 def validate_file_operation(func):
@@ -41,7 +22,7 @@ def validate_file_operation(func):
             raise HTTPException(status_code=400, detail='The file cannot be processed')
         except Exception as e:
             print(f"Error: {e}")
-            raise HTTPException(status_code=500, detail='Something went wrong')
+            raise HTTPException(status_code=500, detail='Something went wrong processing the file')
     return wrapper
 
 
@@ -158,72 +139,6 @@ def validate_file(file: Annotated[UploadFile, File()]) -> UploadFile:
         )
 
 
-def parse_template(template_file: UploadFile) -> BytesIO:
-    """
-    Parse a DOCX template file and replace placeholders with Jinja2 syntax; raise HTTP 400 on error.
-    """
-    try:
-        replacement_context = {
-            'DATE': '{{date}}',
-            'PARTY1_START': '{% for person in party_one %}',
-            'PARTY1_END': '{% endfor %}',
-            'NAME': '{{person.firstname}} {{person.second_name}} {{person.lastname}}',
-            'ADDRESS': '''{{person.client_address.house_number}}, {{person.client_address.street}}, {{person.client_address.city}}, {{person.client_address.postal_code}}, {{person.client_address.country}}''',
-            'BIRTH': '{{person.birthdate}}',
-            'PARTY2_START': '{% for person in party_two %}',
-            'PARTY2_END': '{% endfor %}'
-        }
-        doc = Document(template_file.file)
-        docx_replace(doc, **replacement_context)
-        buffer = BytesIO()
-        doc.save(buffer)
-        buffer.seek(0)
-        return buffer
-    except Exception as e:
-        print(f"Error: {e}")
-        raise HTTPException(status_code=400, detail='Something went wrong. Try again.')
-
-
-def parse_context(context: GenContext, db) -> dict:
-    """
-    Construct a context dictionary for template rendering by retrieving client data from the database.
-    """
-    party_one = []
-    for person_id in context.party_one_id:
-        client = ClientManager(db, person_id, user_id=None).get_object()
-        if client is None:
-            raise HTTPException(status_code=400, detail=f"There is no client with id {person_id}")
-        client.birthdate = client.birthdate.strftime('%d %B %Y')
-        party_one.append(client)
-    party_two = []
-    for person_id in context.party_two_id:
-        client = ClientManager(db, person_id, user_id=None).get_object()
-        if client is None:
-            raise HTTPException(status_code=400, detail=f"There is no client with id {person_id}")
-        client.birthdate = client.birthdate.strftime('%d %B %Y')
-        party_two.append(client)
-    date = context.date.strftime('%d %B %Y')
-    parsed_context = {
-        "party_one": party_one,
-        "party_two": party_two,
-        "date": date
-    }
-    return parsed_context
-
-
-@validate_file_operation
-def render_template(buffer: BytesIO, context: dict) -> BytesIO:
-    """
-    Render a DOCX template with the provided context and return the result as a BytesIO buffer.
-    """
-    doc = DocxTemplate(buffer)
-    doc.render(context)
-    buffer = BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
-    return buffer
-
-
 def aws_validation(func):
     """
     Decorator that handles AWS and boto3 errors.
@@ -266,10 +181,3 @@ async def validate_image(file: Annotated[UploadFile, File()]) -> UploadFile:
     if actual_type not in allowed_images_types:
         raise HTTPException(status_code=400, detail=f"Type {actual_type} is not allowed")
     return file
-
-
-def email_sender_validation(result: dict) -> dict:
-    """Validate data from the AI agent"""
-    if 'error' in result.values():
-        raise HTTPException(status_code=400, detail=result.get('message', 'Something went wrong. Try again later.'))
-    return result
