@@ -1,0 +1,9 @@
+[run]
+
+source =
+    ai
+    app
+    auth
+    multi_agent_system
+    storage
+    template_processor
